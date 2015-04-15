@@ -1,0 +1,20 @@
+---
+title: "Relational Databases and SQL in R"
+author: "Sean Davis"
+output:
+  html_document:
+    theme: readable
+---
+
+## Overview
+
+Databases, and relational databases in particular, are designed to handle large amounts of data and will maintain data consistency for concurrent users.  For this reason, they are often used to store structured data.  Connecting to relational databases from R is relatively straightforward and allows retrieval, filtering, manipulating, and visualizing data.  In addition, since the data in a database can be filtered before loading into R, such interactions allow working with datasets that are much larger than can fit into memory.  I will discuss the basics of relational databases and present a short tutorial on working with relational databases from R using standard SQL and dplyr.
+
+## Materials
+
+The course materials include:
+
+- [Slides in HTML format](SQL_Tutorial_in_R.html)
+- [R Markdown version of slides](SQL_Tutorial_in_R.html)
+
+Thanks to the folks at [Software Carpentry](http://software-carpentry.org/) for ideas inspired by [this extended SQL tutorial](http://swcarpentry.github.io/sql-novice-survey/).
