@@ -15,6 +15,6 @@ Databases, and relational databases in particular, are designed to handle large 
 The course materials include:
 
 - [Slides in HTML format](SQL_Tutorial_in_R.html)
-- [R Markdown version of slides](SQL_Tutorial_in_R.html)
+- [R Markdown version of slides](SQL_Tutorial_in_R.Rmd)
 
 Thanks to the folks at [Software Carpentry](http://software-carpentry.org/) for ideas inspired by [this extended SQL tutorial](http://swcarpentry.github.io/sql-novice-survey/).
