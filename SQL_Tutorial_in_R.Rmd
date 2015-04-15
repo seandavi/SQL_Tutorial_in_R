@@ -1,0 +1,258 @@
+---
+title: "Relational Databases and SQL in R"
+author: "Sean Davis"
+date: "April 15, 2015"
+output: ioslides_presentation
+---
+
+# Relation Databases and SQL
+
+## Definitions
+
+- Database or Schema: a set of connected or related Tables
+- Table: A two-dimentional collection of data arranged into Rows and Columns 
+- Row: A single entry in a Table
+- Field or column: A column in a Table
+
+## Example Table
+
+```{r downloadDB,echo=FALSE,results='hide'}
+library(knitr)
+opts_chunk$set(warning=FALSE,message=FALSE)
+download.file('http://files.software-carpentry.org/survey.db',
+              destfile='survey.db')
+```
+
+```{r connect,echo=FALSE,results='markup'}
+library(RSQLite)
+con = dbConnect(SQLite(),'survey.db')
+```
+
+```{r exampleTable,echo=FALSE}
+res = dbGetQuery(con,'select * from Person limit 7')
+knitr::kable(res)
+```
+
+## Example Table Schema
+
+Tables in SQL are defined using a specific Data Description Language (DDL).  Here is the DDL for the previous table:
+
+```
+CREATE TABLE Person (
+    ident text,
+    personal text,
+    family text);
+```
+
+# SQL Tutorial, in R
+
+## Setup
+
+- Start RStudio or R
+- Download the example database
+```{r setup1,eval=FALSE}
+download.file('http://files.software-carpentry.org/survey.db',
+              destfile='survey.db')
+```
+- Install RSQLite:
+```{r setup2,eval=FALSE}
+install.packages('RQLite')
+```
+The last step will install the `DBI` package as well as `RSQLite`.
+
+## The DBI Package
+
+- The `DBI` package is the gateway to relational databases in R.
+- `DBI` is a "virtual package" in that it supplies only the methods, but not the implementation for interacting with relational databases.
+- Implementations are database specific and include:
+    - RSQLite
+    - RMySQL
+    - RPostgreSQL
+    - RODBC
+    - bigquery
+    - ...
+  
+## Connecting to a database:
+
+```{r}
+con = dbConnect(SQLite(),"survey.db")
+summary(con)
+```
+The `con` object is now a "live" connection to our "survey" database.
+
+## Background of Survey database
+
+In the late 1920s and early 1930s, William Dyer, Frank Pabodie, and Valentina Roerich led expeditions to the Pole of Inaccessibility in the South Pacific, and then onward to Antarctica. Two years ago, their expeditions were found in a storage locker at Miskatonic University. We have scanned and OCR'd the data they contain, and we now want to store that information in a way that will make search and analysis easy.
+
+## The Survey Database DDL
+```
+CREATE TABLE Person(
+  ident    text,
+	personal text,
+	family	 text
+);
+CREATE TABLE Site(
+	name text,
+	lat  real,
+	long real
+);
+CREATE TABLE Visited(
+	ident integer,
+	site  text,
+	dated text
+);
+CREATE TABLE Survey(
+	taken   integer,
+	person  text,
+	quant   text,
+	reading real
+);
+```
+
+## SELECTing
+
+```{r straightselect,results='hide'}
+dbGetQuery(con,"select * from Person")
+dbGetQuery(con,"select ident,family,personal from Person")
+dbGetQuery(con,"select * from Person")
+dbGetQuery(con,"select ident,family from Person")
+dbGetQuery(con,"select ident,ident,ident from Person")
+```
+
+## ORDERing
+
+```{r orderselect,results="hide"}
+dbGetQuery(con,"select * from Person")
+dbGetQuery(con,"select * from person order by ident")
+dbGetQuery(con,"select * from person order by ident desc")
+```
+
+## Filtering rows (SQL WHERE)
+
+```{r filterselect,results='hide'}
+dbGetQuery(con,"select * from Survey")
+dbGetQuery(con,"select * from Survey limit 10")
+dbGetQuery(con,"select * from Survey where person='lake'")
+dbGetQuery(con,"select * from Site limit 10")
+dbGetQuery(con,"select * from Site where lat>0")
+```
+
+## Counting and Grouping
+
+```{r moreselect,results='hide'}
+dbGetQuery(con,"select count(*) from Survey")
+dbGetQuery(con,"select person,count(*) from Survey group by person")
+```
+
+## Joining
+
+```{r joining1,echo=FALSE}
+knitr::kable(dbGetQuery(con,"select * from Person limit 3"))
+```
+```{r joining2,echo=FALSE}
+knitr::kable(dbGetQuery(con,"select * from Survey limit 3"))
+```
+
+## Joining
+
+```{r joining3}
+knitr::kable(dbGetQuery(con,paste("select personal,family,taken,quant",
+                                  ",reading from Person join Survey",
+                                  "on Person.ident=Survey.Person limit 5")))
+```
+
+## The SQL standard
+
+[SQL standards](http://en.wikipedia.org/wiki/SQL)
+
+- Note that SQL includes many data types and functions.
+- Data types in SQL are somewhat standardized, but different database engines may offer a subset or superset of SQL standard data types.
+- Functionality and compliance with SQL standards varies by database engine.
+
+# dplyr
+
+## Setup
+
+- The NYC flights data
+This dataset contains all 336776 flights that departed from New York City in 2013. The data comes from the US Bureau of Transporation Statistics, and is documented in ?nycflights13
+```{r eval=FALSE}
+install.packages(c("dplyr","nycflights13"))
+```
+
+```{r nycflights1}
+library(dplyr)
+library(nycflights13)
+dim(flights)
+```
+
+## Setup
+
+```{r}
+head(flights,6)
+```
+
+## dplyr Verbs
+
+- select
+- arrange
+- filter
+
+## dplyr select
+
+```{r selectdplyr}
+res = select(flights,year,month,day,origin)
+head(res,3)
+```
+
+## dplyr arrange
+
+```{r arrangedplyr}
+res = arrange(flights,desc(arr_delay),dep_time)
+head(res,3)
+```
+
+## dplyr filter
+
+```{r filterdplyr}
+res = filter(flights,origin=="JFK")
+head(res,3)
+```
+
+## Pipelining
+
+```{r pipes}
+res = filter(flights,origin=="JFK") %>%
+  arrange(desc(arr_delay),dep_time) %>%
+  select(arr_time,arr_delay,flight,origin)
+head(res)
+```
+
+# Databases and dplyr
+
+## Create database
+
+```{r createdb,eval=FALSE}
+my_db <- src_sqlite("my_db.sqlite3", create = T)
+flights_sqlite <- copy_to(my_db, flights, temporary = FALSE, indexes = list(
+  c("year", "month", "day"), "carrier", "tailnum"))
+```
+
+```{r connectdbdplyr,echo=FALSE}
+my_db = src_sqlite("my_db.sqlite3")
+```
+
+## Working with database
+
+```{r tableconnect}
+flights_sqlite <- tbl(nycflights13_sqlite(), "flights")
+flights_sqlite
+```
+
+## Working with database
+
+```{r}
+res = filter(flights_sqlite,origin=="JFK") %>%
+  arrange(desc(arr_delay),dep_time) %>%
+  select(arr_time,arr_delay,flight,origin)
+head(res)
+```
